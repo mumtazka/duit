@@ -9,4 +9,5 @@ if (!url || !anonKey) {
   );
 }
 
+// Catatan: tanpa auth. Tabel open (RLS dimatikan), akses via anon key. Lihat schema.sql.
 export const supabase = createClient(url, anonKey);

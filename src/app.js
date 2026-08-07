@@ -2,16 +2,14 @@ import { supabase } from './lib/supabase.js';
 
 const PALETTE = ['#4f6bf5','#30a46c','#e5484d','#f5a524','#8e4ec6','#f0683d','#e5357f','#7a8ba3','#5c7cfa'];
 const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-const WEEKDAY = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
 
 const state = {
   expenses: [],      // {id, amount, note, category, date}
   categories: [],    // {id, name, color}
   selectedDate: todayStr(),
+  editingId: null,
   viewYear: new Date().getFullYear(),
   viewMonth: new Date().getMonth(),
-  weekOffset: 0,
-  monthOffset: 0,
 };
 
 /* ---------- util ---------- */
@@ -35,7 +33,7 @@ function rangeSum(start, end) {
   return { total, count };
 }
 function weekStart() { return addDays(new Date(), -((new Date().getDay()+6)%7)); }
-function weekRange(offset) { const s=addDays(weekStart(), offset*7); return { start:s, end:addDays(s,6) }; }
+function weekRange() { const s=weekStart(); return { start:s, end:addDays(s,6) }; }
 function monthRange(offset) {
   const now=new Date();
   const start=new Date(now.getFullYear(), now.getMonth()+offset, 1);
@@ -77,6 +75,17 @@ export async function addExpense({ amount, note, category }) {
   state.expenses.push({ id: data[0].id, amount, note, category, date: state.selectedDate });
 }
 
+export async function updateExpense(id, { amount, note, category }) {
+  const { error } = await supabase.from('expenses').update({
+    amount,
+    note,
+    category_id: catId(category),
+  }).eq('id', id);
+  if (error) throw error;
+  const target = state.expenses.find(e => e.id === id);
+  if (target) Object.assign(target, { amount, note, category });
+}
+
 export async function deleteExpense(id) {
   const { error } = await supabase.from('expenses').delete().eq('id', id);
   if (error) throw error;
@@ -91,20 +100,30 @@ export async function clearDay(ds) {
   state.expenses = state.expenses.filter(e => e.date !== ds);
 }
 
-async function addCategory(name) {
-  const { data, error } = await supabase.from('categories').insert({
-    name, color: PALETTE[state.categories.length % PALETTE.length],
-  }).select('id,name,color').single();
-  if (error) {
-    // jika sudah ada (duplicate) muat ulang kategori saja
-    if (error.code === '23505') { await loadData(); return; }
-    throw error;
-  }
-  state.categories.push(data);
+/* ---------- edit mode ---------- */
+function editing() { return state.editingId ? state.expenses.find(e => e.id === state.editingId) : null; }
+
+function enterEdit(e) {
+  state.editingId = e.id;
+  $('note').value = e.note;
+  $('amount').value = e.amount;
+  $('category').value = e.category;
+  $('amountPreview').textContent = `≈ ${fmtRupiah(e.amount)}`;
+  $('editBar').hidden = false;
+  $('editTarget').textContent = e.note || 'catatan';
+  $('expenseForm').querySelector('button[type="submit"]').textContent = 'Simpan Perubahan';
+  document.querySelector('.input-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelEdit() {
+  state.editingId = null;
+  $('note').value = ''; $('amount').value = ''; $('category').value = ''; $('amountPreview').textContent = '';
+  $('editBar').hidden = true;
+  $('expenseForm').querySelector('button[type="submit"]').textContent = 'Simpan Pengeluaran';
 }
 
 /* ---------- render ---------- */
-export function renderCategoryOptions() {
+function renderCategoryOptions() {
   const sel = $('category');
   sel.innerHTML = '<option value="">Kategori…</option>';
   state.categories.forEach(c => {
@@ -113,13 +132,13 @@ export function renderCategoryOptions() {
 }
 
 function renderSummary() {
-  const m = monthRange(0);
-  const r = rangeSum(m.start, m.end);
-  $('periodTotal').textContent = fmtRupiah(r.total);
-  $('periodLabel').textContent = `${MONTHS[m.start.getMonth()]} ${m.start.getFullYear()}`;
-  $('monthBadge').textContent = `${MONTHS[m.start.getMonth()]} ${m.start.getFullYear()}`;
-  $('todayTotal').textContent = fmtRupiah(daySum(todayStr()));
-  $('countTotal').textContent = r.count;
+  const today = todayStr();
+  const wk = rangeSum(weekRange().start, weekRange().end);
+  const mo = rangeSum(monthRange(0).start, monthRange(0).end);
+  $('todayTotal').textContent = fmtRupiah(daySum(today));
+  $('weekTotal').textContent = fmtRupiah(wk.total);
+  $('monthTotal').textContent = fmtRupiah(mo.total);
+  $('monthCount').textContent = mo.count;
 }
 
 function renderCalendar() {
@@ -150,10 +169,15 @@ function appendDay(date, isDim) {
 
 function renderList() {
   const d = parse(state.selectedDate);
-  $('dayTitle').textContent = state.selectedDate===todayStr()
+  const isToday = state.selectedDate===todayStr();
+  $('dayTitle').textContent = isToday
     ? 'Pengeluaran Hari Ini'
     : `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  $('selectedDateHint').textContent = isToday
+    ? `Hari ini · ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+    : `${WEEKDAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
   $('clearDay').style.display = dayExpenses(state.selectedDate).length ? '' : 'none';
+
   const list=$('expenseList');
   list.innerHTML='';
   $('emptyMsg').style.display = dayExpenses(state.selectedDate).length ? 'none':'block';
@@ -167,57 +191,21 @@ function renderList() {
     const small=document.createElement('small'); small.textContent=e.category||'Lainnya'; note.appendChild(small);
     const right=document.createElement('div'); right.className='expense-right';
     const amt=document.createElement('span'); amt.className='expense-amount'; amt.textContent=fmtRupiah(e.amount);
+    const edit=document.createElement('button'); edit.className='del-btn'; edit.textContent='✎'; edit.setAttribute('aria-label','Edit');
+    edit.addEventListener('click',()=>{ if(state.editingId===e.id) cancelEdit(); else enterEdit(e); });
     const del=document.createElement('button'); del.className='del-btn'; del.textContent='✕'; del.setAttribute('aria-label','Hapus');
     del.addEventListener('click', async ()=>{
-      try { await deleteExpense(e.id); renderAll(); }
+      try { await deleteExpense(e.id); if(state.editingId===e.id) cancelEdit(); renderAll(); }
       catch (e) { logErr('Hapus gagal', e); }
     });
-    left.append(dot,note); right.append(amt,del); li.append(left,right); list.appendChild(li);
+    left.append(dot,note); right.append(amt,edit,del); li.append(left,right); list.appendChild(li);
   });
 }
 
-function renderWeekly() {
-  const { start, end } = weekRange(state.weekOffset);
-  const grid=$('weekGrid'); grid.innerHTML='';
-  $('weekTitle').textContent = (start.getMonth()===end.getMonth() && start.getFullYear()===end.getFullYear())
-    ? `${start.getDate()}–${end.getDate()} ${MONTHS[start.getMonth()]} ${start.getFullYear()}`
-    : `${start.getDate()} ${MONTHS[start.getMonth()]} – ${end.getDate()} ${MONTHS[end.getMonth()]} ${end.getFullYear()}`;
-  for (let i=0;i<7;i++){
-    const day=addDays(start,i); const ds=fmtDate(day); const amt=daySum(ds);
-    const cell=document.createElement('div');
-    cell.className='week-cell '+(ds===todayStr()?'today ':'')+(amt>0?'has':'zero');
-    cell.innerHTML=`<span class="wd">${WEEKDAY[i]}</span><span class="dd">${day.getDate()}</span><span class="amt">${amt>0?compact(amt):'—'}</span>`;
-    cell.addEventListener('click',()=>{ state.viewYear=day.getFullYear(); state.viewMonth=day.getMonth(); state.selectedDate=ds; switchView('daily'); renderCalendar(); renderList(); });
-    grid.appendChild(cell);
-  }
-}
-
-function renderMonthly(){
-  const { start, end } = monthRange(state.monthOffset);
-  $('monthTitle').textContent=`${MONTHS[start.getMonth()]} ${start.getFullYear()}`;
-  const r=rangeSum(start,end);
-  const avg = r.count?Math.round(r.total/r.count):0;
-  $('monthStats').innerHTML=`
-    <div class="mstat"><span class="label">Total</span><strong>${fmtRupiah(r.total)}</strong></div>
-    <div class="mstat"><span class="label">Catatan</span><strong>${r.count}</strong></div>
-    <div class="mstat"><span class="label">Rata/note</span><strong>${fmtRupiah(avg)}</strong></div>`;
-  const chart=$('monthChart'); chart.innerHTML='';
-  const sums=[];
-  for (let d=new Date(start); d<=end; d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1)) sums.push(daySum(fmtDate(d)));
-  const max=Math.max(...sums,1);
-  sums.forEach(v=>{
-    const bar=document.createElement('div');
-    bar.className='chart-bar'+(v>0?' full':'');
-    bar.style.height=`${Math.max(0.1,(v/max)*100)}%`;
-    bar.title=v>0?fmtRupiah(v):'';
-    chart.appendChild(bar);
-  });
-  renderCategoryBars(start,end);
-}
-
-function renderCategoryBars(start,end){
+function renderCategoryBars() {
+  const { start, end } = monthRange(0);
   const byCat={}; let total=0;
-  for (let d=new Date(start); d<=end; d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1)){
+  for (let d=new Date(start); d<=end; d=addDays(d,1)){
     dayExpenses(fmtDate(d)).forEach(e=>{ const c=e.category||'Lainnya'; byCat[c]=(byCat[c]||0)+e.amount; total+=e.amount; });
   }
   const bars=$('catBars'); bars.innerHTML='';
@@ -232,28 +220,16 @@ function renderCategoryBars(start,end){
   });
 }
 
-export function switchView(name){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===name));
-  $('view-daily').hidden=name!=='daily';
-  $('view-weekly').hidden=name!=='weekly';
-  $('view-monthly').hidden=name!=='monthly';
-  if(name==='weekly') renderWeekly();
-  if(name==='monthly') renderMonthly();
-}
-
 export function renderAll(){
   renderCategoryOptions();
   renderSummary();
   renderCalendar();
   renderList();
-  renderWeekly();
-  renderMonthly();
+  renderCategoryBars();
 }
 
 /* ---------- bind events ---------- */
 export function bindEvents(){
-  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchView(t.dataset.view)));
-
   $('amount').addEventListener('input',()=>{
     const v=parseInt($('amount').value,10);
     $('amountPreview').textContent= v>=0&&!isNaN(v)?`≈ ${fmtRupiah(v)}`:'';
@@ -266,12 +242,20 @@ export function bindEvents(){
     const submitBtn=$('expenseForm').querySelector('button[type="submit"]');
     submitBtn.disabled=true;
     try {
-      await addExpense({ amount, note: $('note').value.trim(), category: $('category').value || 'Lainnya' });
-      $('amount').value=''; $('note').value=''; $('category').value=''; $('amountPreview').textContent='';
+      const payload = { amount, note: $('note').value.trim(), category: $('category').value || 'Lainnya' };
+      if (state.editingId) {
+        await updateExpense(state.editingId, payload);
+        cancelEdit();
+      } else {
+        await addExpense(payload);
+        $('amount').value=''; $('note').value=''; $('category').value=''; $('amountPreview').textContent='';
+      }
       renderAll();
     } catch (e) { logErr('Simpan gagal', e); }
     finally { submitBtn.disabled=false; }
   });
+
+  $('cancelEdit').addEventListener('click', cancelEdit);
 
   $('clearDay').addEventListener('click', async ()=>{
     if(!dayExpenses(state.selectedDate).length) return;
@@ -283,8 +267,6 @@ export function bindEvents(){
 
   $('prevMonth').addEventListener('click',()=>{ state.viewMonth--; if(state.viewMonth<0){state.viewMonth=11;state.viewYear--;} renderCalendar(); });
   $('nextMonth').addEventListener('click',()=>{ state.viewMonth++; if(state.viewMonth>11){state.viewMonth=0;state.viewYear++;} renderCalendar(); });
-  $('prevWeek').addEventListener('click',()=>{ state.weekOffset--; renderWeekly(); });
-  $('nextWeek').addEventListener('click',()=>{ state.weekOffset++; renderWeekly(); });
-  $('prevM').addEventListener('click',()=>{ state.monthOffset--; renderMonthly(); });
-  $('nextM').addEventListener('click',()=>{ state.monthOffset++; renderMonthly(); });
 }
+
+const WEEKDAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
