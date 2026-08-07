@@ -1,104 +1,243 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catatan Pengeluaran</title>
+  <title>Catatan Pengeluaran — Executive Financial Tracker</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
+  <div class="app-background">
+    <div class="bg-blur-1"></div>
+    <div class="bg-blur-2"></div>
+  </div>
 
-    <header class="topbar">
-      <div>
-        <h1>Catatan Pengeluaran</h1>
-        <p class="subtitle">Kelola pengeluaran harianmu</p>
+  <div class="app">
+    <!-- GATE SANDI / LOCK SCREEN -->
+    <section id="lockScreen" class="lock" aria-label="Layar Kunci">
+      <div class="lock-card card">
+        <div class="lock-badge">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h1 class="lock-title">Catatan Pengeluaran</h1>
+        <p class="subtitle">Masukkan sandi untuk mengakses finansial</p>
+        <form id="lockForm" autocomplete="off">
+          <div class="field lock-input-wrapper">
+            <input type="password" id="lockPassword" placeholder="Masukkan Sandi" required autofocus>
+          </div>
+          <p class="lock-error" id="lockError"></p>
+          <button type="submit" class="btn-primary btn-block">
+            <span>Buka Akses</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </button>
+        </form>
       </div>
-      <div class="month-badge" id="monthBadge">—</div>
+    </section>
+
+    <!-- HEADER / TOPBAR -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Catatan Pengeluaran</h1>
+          <p class="subtitle">Pantau & kelola arus kas harianmu</p>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="month-badge" id="monthBadge">
+          <span class="pulse-dot"></span>
+          <span id="monthBadgeText">—</span>
+        </div>
+        
+        <!-- Theme Switcher Button -->
+        <button class="icon-btn theme-btn" id="themeToggle" title="Ganti Tema (Gelap/Terang)" aria-label="Ganti Tema">
+          <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+
+        <button class="icon-btn lock-btn" id="lockBtn" title="Kunci Aplikasi" aria-label="Kunci Aplikasi">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </button>
+      </div>
     </header>
 
+    <!-- MAIN GRID LAYOUT -->
     <div class="layout">
 
-      <!-- KOLOM UTAMA -->
+      <!-- MAIN COLUMN -->
       <main class="main-col">
 
-        <section class="card">
+        <!-- CALENDAR CARD -->
+        <section class="card cal-card">
           <div class="cal-head">
-            <button class="nav-btn" id="prevMonth" aria-label="Sebelumnya">‹</button>
-            <span id="calTitle">Bulan</span>
-            <button class="nav-btn" id="nextMonth" aria-label="Berikutnya">›</button>
+            <button class="nav-btn" id="prevMonth" aria-label="Bulan Sebelumnya">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <div class="cal-title-wrapper">
+              <h2 id="calTitle">Bulan</h2>
+            </div>
+            <button class="nav-btn" id="nextMonth" aria-label="Bulan Berikutnya">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
           </div>
+
           <div class="cal-grid" id="calGrid">
             <span class="dow">Sen</span><span class="dow">Sel</span><span class="dow">Rab</span>
             <span class="dow">Kam</span><span class="dow">Jum</span><span class="dow">Sab</span><span class="dow">Min</span>
           </div>
-          <p class="cal-date-hint" id="selectedDateHint">Pilih tanggal</p>
+
+          <div class="cal-footer">
+            <span class="cal-date-hint" id="selectedDateHint">Pilih tanggal</span>
+            <button type="button" class="today-jump-btn" id="todayJumpBtn" title="Lompat ke Hari Ini">Hari Ini</button>
+          </div>
         </section>
 
+        <!-- INPUT FORM CARD -->
         <form id="expenseForm" class="card input-card" autocomplete="off">
-          <div class="field">
-            <input type="text" id="note" placeholder="Keterangan, mis. makan siang">
+          <div class="form-header">
+            <h3 class="form-title" id="formHeaderTitle">Tambah Pengeluaran</h3>
+            <span class="form-badge" id="selectedFormDateBadge">Hari ini</span>
           </div>
-          <div class="field-row">
-            <input type="number" id="amount" placeholder="20.000" min="0" step="1" required>
-            <select id="category">
-              <option value="">Kategori…</option>
-            </select>
-          </div>
-          <p class="preview" id="amountPreview"></p>
+
           <div class="edit-bar" id="editBar" hidden>
-            <span>Menyunting <b id="editTarget"></b></span>
-            <button type="button" class="link-btn" id="cancelEdit">Batal</button>
+            <div class="edit-info">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              <span>Menyunting: <strong id="editTarget">catatan</strong></span>
+            </div>
+            <button type="button" class="link-btn cancel-btn" id="cancelEdit">Batal Edit</button>
           </div>
-          <button type="submit" class="btn-primary">Simpan Pengeluaran</button>
+
+          <div class="field">
+            <label for="note" class="field-label">Keterangan</label>
+            <input type="text" id="note" placeholder="Misal: Makan Siang, Bensin, Kopi" required>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="amount" class="field-label">Jumlah (Rp)</label>
+              <div class="currency-input-wrapper">
+                <span class="currency-symbol">Rp</span>
+                <input type="number" id="amount" placeholder="0" min="1" step="1" required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="category" class="field-label">Kategori</label>
+              <select id="category" required>
+                <option value="">Pilih Kategori…</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="preview-row">
+            <span class="preview" id="amountPreview"></span>
+          </div>
+
+          <button type="submit" class="btn-primary btn-block" id="submitBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Simpan Pengeluaran</span>
+          </button>
         </form>
 
-        <section class="card">
+        <!-- EXPENSE LIST CARD -->
+        <section class="card list-card">
           <div class="card-head">
-            <h2 id="dayTitle">Pengeluaran Hari Ini</h2>
-            <button class="link-btn" id="clearDay">Hapus hari</button>
+            <div>
+              <h2 id="dayTitle">Pengeluaran Hari Ini</h2>
+              <p class="card-subtext" id="daySubtitle">Daftar transaksi tercatat</p>
+            </div>
+            <button class="link-btn danger-link" id="clearDay">Hapus Semua Hari Ini</button>
           </div>
+
+          <!-- Search and Filter Controls -->
+          <div class="filter-bar">
+            <div class="search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="searchInput" placeholder="Cari keterangan...">
+            </div>
+            <div class="filter-select-wrapper">
+              <select id="filterCategory">
+                <option value="ALL">Semua Kategori</option>
+              </select>
+            </div>
+          </div>
+
           <ul id="expenseList" class="expense-list"></ul>
-          <p id="emptyMsg" class="empty">Belum ada pengeluaran di tanggal ini. Tambahkan di form atas.</p>
+          
+          <div id="emptyMsg" class="empty-state">
+            <div class="empty-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+            </div>
+            <p class="empty-title">Belum ada pengeluaran</p>
+            <p class="empty-desc">Tidak ada catatan transaksi pada tanggal atau kriteria filter ini.</p>
+          </div>
         </section>
 
       </main>
 
-      <!-- SIDEBAR -->
+      <!-- SIDEBAR COLUMN -->
       <aside class="side-col">
 
-        <section class="card">
-          <h2 class="card-title">Ringkasan</h2>
-          <div class="summary-list">
-            <div class="sum-item">
-              <span class="sum-label">Hari Ini</span>
-              <strong id="todayTotal" class="sum-value">Rp0</strong>
+        <!-- SUMMARY STATS CARD -->
+        <section class="card summary-card">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            <span>Ringkasan Keuangan</span>
+          </h2>
+          
+          <div class="stat-grid">
+            <div class="stat-card today">
+              <span class="stat-label">Hari Ini</span>
+              <strong id="todayTotal" class="stat-value">Rp0</strong>
             </div>
-            <div class="sum-item">
-              <span class="sum-label">Minggu Ini</span>
-              <strong id="weekTotal" class="sum-value">Rp0</strong>
+            <div class="stat-card week">
+              <span class="stat-label">Minggu Ini</span>
+              <strong id="weekTotal" class="stat-value">Rp0</strong>
             </div>
-            <div class="sum-item">
-              <span class="sum-label">Bulan Ini</span>
-              <strong id="monthTotal" class="sum-value">Rp0</strong>
+            <div class="stat-card month">
+              <span class="stat-label">Bulan Ini</span>
+              <strong id="monthTotal" class="stat-value">Rp0</strong>
             </div>
-            <div class="sum-item">
-              <span class="sum-label">Catatan Bulan Ini</span>
-              <strong id="monthCount" class="sum-value">0</strong>
+            <div class="stat-card count">
+              <span class="stat-label">Transaksi Bulan Ini</span>
+              <strong id="monthCount" class="stat-value">0</strong>
             </div>
           </div>
         </section>
 
-        <section class="card">
-          <h2 class="card-title">Pengeluaran Bulan Ini per Kategori</h2>
+        <!-- CATEGORY BREAKDOWN CARD -->
+        <section class="card category-card">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+            <span>Distribusi Kategori</span>
+          </h2>
           <div class="cat-bars" id="catBars"></div>
-          <p class="empty" id="catEmpty">Belum ada data bulan ini.</p>
+          <div class="empty-state sm" id="catEmpty">
+            <p class="empty-desc">Belum ada transaksi bulan ini.</p>
+          </div>
+        </section>
+
+        <!-- QUICK TIP CARD -->
+        <section class="card tip-card">
+          <div class="tip-header">
+            <span class="tip-icon">💡</span>
+            <h3>Tips Keuangan</h3>
+          </div>
+          <p class="tip-text">Alokasikan 50% untuk kebutuhan, 30% untuk keinginan, dan 20% untuk tabungan atau investasi.</p>
         </section>
 
       </aside>
 
     </div>
   </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
