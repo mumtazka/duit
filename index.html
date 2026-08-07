@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catatan Pengeluaran</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+
+    <section id="authScreen" class="auth" hidden>
+      <div class="auth-card card">
+        <h1 class="auth-title">Catatan Pengeluaran</h1>
+        <p class="subtitle">Masuk untuk mulai mencatat</p>
+        <form id="authForm" autocomplete="on">
+          <div class="field">
+            <input type="email" id="authEmail" placeholder="Email" required>
+            <input type="password" id="authPassword" placeholder="Password (min. 6 karakter)" minlength="6" required>
+          </div>
+          <p class="auth-error" id="authError"></p>
+          <button type="submit" class="btn-primary" id="authSubmit">Masuk</button>
+          <button type="button" class="link-btn auth-toggle" id="authToggle">Belum punya akun? Daftar</button>
+        </form>
+      </div>
+    </section>
+
+    <header class="topbar" id="appHeader" hidden>
+      <div>
+        <h1>Catatan Pengeluaran</h1>
+        <p class="subtitle" id="userEmail"></p>
+      </div>
+      <div class="header-right">
+        <div class="month-badge" id="monthBadge">—</div>
+        <button class="logout-btn" id="logoutBtn">Keluar</button>
+      </div>
+    </header>
+
+    <div id="appRoot" hidden>
+
+    <section class="hero">
+      <div class="hero-main">
+        <span class="label">Total Pengeluaran</span>
+        <span class="big-total" id="periodTotal">Rp0</span>
+        <span class="period-label" id="periodLabel">Bulan ini</span>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <span class="label">Hari Ini</span>
+          <strong id="todayTotal">Rp0</strong>
+        </div>
+        <div>
+          <span class="label">Jumlah Catatan</span>
+          <strong id="countTotal">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-view="daily">Harian</button>
+      <button class="tab" data-view="weekly">Mingguan</button>
+      <button class="tab" data-view="monthly">Bulanan</button>
+    </nav>
+
+    <!-- HARIAN -->
+    <section class="view" id="view-daily">
+      <form id="expenseForm" class="card input-card" autocomplete="off">
+        <div class="field">
+          <input type="text" id="note" placeholder="Keterangan, mis. makan siang">
+        </div>
+        <div class="field-row">
+          <input type="number" id="amount" placeholder="20.000" min="0" step="1" required>
+          <select id="category">
+            <option value="">Kategori…</option>
+          </select>
+        </div>
+        <p class="preview" id="amountPreview"></p>
+        <button type="submit" class="btn-primary">Simpan Pengeluaran</button>
+      </form>
+
+      <div class="card">
+        <div class="card-head">
+          <h2 id="dayTitle">Pengeluaran Hari Ini</h2>
+          <button class="link-btn" id="clearDay">Hapus hari ini</button>
+        </div>
+        <div class="calendar">
+          <div class="cal-head">
+            <button class="nav-btn" id="prevMonth" aria-label="Sebelumnya">‹</button>
+            <span id="calTitle">Bulan</span>
+            <button class="nav-btn" id="nextMonth" aria-label="Berikutnya">›</button>
+          </div>
+          <div class="cal-grid" id="calGrid">
+            <span class="dow">Sen</span><span class="dow">Sel</span><span class="dow">Rab</span>
+            <span class="dow">Kam</span><span class="dow">Jum</span><span class="dow">Sab</span><span class="dow">Min</span>
+          </div>
+        </div>
+        <ul id="expenseList" class="expense-list"></ul>
+        <p id="emptyMsg" class="empty">Belum ada pengeluaran di tanggal ini.</p>
+      </div>
+    </section>
+
+    <!-- MINGGUAN -->
+    <section class="view" id="view-weekly" hidden>
+      <div class="card">
+        <div class="card-head">
+          <button class="nav-btn" id="prevWeek" aria-label="Minggu lalu">‹</button>
+          <h2 id="weekTitle">Minggu Ini</h2>
+          <button class="nav-btn" id="nextWeek" aria-label="Minggu depan">›</button>
+        </div>
+        <div class="week-grid" id="weekGrid"></div>
+      </div>
+    </section>
+
+    <!-- BULANAN -->
+    <section class="view" id="view-monthly" hidden>
+      <div class="card">
+        <div class="card-head">
+          <button class="nav-btn" id="prevM" aria-label="Bulan lalu">‹</button>
+          <h2 id="monthTitle">Ringkasan Bulan</h2>
+          <button class="nav-btn" id="nextM" aria-label="Bulan depan">›</button>
+        </div>
+        <div class="month-stats" id="monthStats"></div>
+        <div class="chart" id="monthChart"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Rata-rata per Kategori</h2>
+        <div class="cat-bars" id="catBars"></div>
+        <p class="empty" id="catEmpty">Belum ada data bulan ini.</p>
+      </div>
+    </section>
+
+  </div>
+
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
