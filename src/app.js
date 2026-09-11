@@ -5,14 +5,18 @@ const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustu
 const WEEKDAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 
 const CAT_ICONS = {
-  'Makan': '🍱',
-  'Transport': '🚗',
-  'Belanja': '🛍️',
-  'Hiburan': '🎬',
-  'Tagihan': '⚡',
-  'Kesehatan': '💊',
-  'Lainnya': '📦'
+  'Makan': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M10 3v8M6 7h4M8 11v10M16 3v18M16 3c2.8 1.6 3.5 4.5 0 8"/></svg>',
+  'Transport': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14M7 17l1-8h8l1 8M6 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM9 9l1-4h4l1 4"/></svg>',
+  'Belanja': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8ZM9 10V6a3 3 0 0 1 6 0v4"/></svg>',
+  'Hiburan': '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="m10 9 5 3-5 3V9Z"/></svg>',
+  'Tagihan': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-13h-7V2Z"/></svg>',
+  'Kesehatan': '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-4.7-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.3-8 11-8 11Z"/></svg>',
+  'Lainnya': '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>'
 };
+
+function categoryIcon(category) {
+  return CAT_ICONS[category] || CAT_ICONS.Lainnya;
+}
 
 const state = {
   expenses: [],      // {id, amount, note, category, date}
@@ -210,6 +214,15 @@ function renderSummary() {
   $('monthTotal').textContent = fmtRupiah(mo.total);
   $('monthCount').textContent = mo.count;
 
+  const overviewMonth = `${MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}`;
+  if ($('monthTotalHero')) $('monthTotalHero').textContent = fmtRupiah(mo.total);
+  if ($('todayTotalHero')) $('todayTotalHero').textContent = fmtRupiah(daySum(today));
+  if ($('averageTotalHero')) $('averageTotalHero').textContent = fmtRupiah(mo.count ? Math.round(mo.total / mo.count) : 0);
+  if ($('overviewMonth')) $('overviewMonth').textContent = `Ringkasan · ${overviewMonth}`;
+  if ($('heroTransactionNote')) $('heroTransactionNote').textContent = mo.count
+    ? `${mo.count} transaksi tercatat bulan ini`
+    : 'Mulai catat transaksi untuk melihat ringkasanmu';
+
   // Header month badge text
   const currentMonthName = MONTHS[new Date().getMonth()];
   const currentYearName = new Date().getFullYear();
@@ -328,8 +341,8 @@ function renderList() {
 
     const catPill = document.createElement('div'); 
     catPill.className = 'cat-pill';
-    catPill.style.background = catColor(e.category);
-    catPill.textContent = CAT_ICONS[e.category] || e.category.charAt(0).toUpperCase();
+    catPill.style.color = catColor(e.category);
+    catPill.innerHTML = categoryIcon(e.category);
 
     const info = document.createElement('div'); 
     info.className = 'expense-info';
@@ -403,17 +416,63 @@ function renderCategoryBars() {
     const pct = total ? Math.round(amt / total * 100) : 0;
     const row = document.createElement('div'); 
     row.className = 'cat-row';
-    const icon = CAT_ICONS[cat] || '•';
+    const icon = categoryIcon(cat);
 
     row.innerHTML = `
       <div class="cat-top">
-        <span class="cat-name">${icon} ${cat} · ${pct}%</span>
+        <span class="cat-name"><i class="cat-inline-icon" style="color:${catColor(cat)}">${icon}</i>${cat} <em>· ${pct}%</em></span>
         <span class="cat-val">${fmtRupiah(amt)}</span>
       </div>
       <div class="cat-track">
         <div class="cat-fill" style="width:${pct}%;background:${catColor(cat)}"></div>
       </div>`;
     bars.appendChild(row);
+  });
+}
+
+function renderHistory() {
+  const list = $('historyList');
+  const empty = $('historyEmpty');
+  if (!list) return;
+
+  list.innerHTML = '';
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  const monthMap = {};
+  state.expenses.forEach(e => {
+    const d = parse(e.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!monthMap[key]) monthMap[key] = { total: 0, count: 0, year: d.getFullYear(), month: d.getMonth() };
+    monthMap[key].total += e.amount;
+    monthMap[key].count += 1;
+  });
+
+  const entries = Object.entries(monthMap)
+    .filter(([key]) => {
+      const [y, m] = key.split('-').map(Number);
+      return y < currentYear || (y === currentYear && m - 1 < currentMonth);
+    })
+    .sort((a, b) => b[0].localeCompare(a[0]));
+
+  if (!entries.length) {
+    list.style.display = 'none';
+    empty.style.display = 'flex';
+  } else {
+    list.style.display = 'flex';
+    empty.style.display = 'none';
+  }
+
+  entries.forEach(([key, data]) => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `
+      <span class="history-month">${MONTHS[data.month]} ${data.year}</span>
+      <span class="history-total">${fmtRupiah(data.total)}</span>
+      <span class="history-count">${data.count} transaksi</span>
+    `;
+    list.appendChild(item);
   });
 }
 
@@ -424,6 +483,7 @@ export function renderAll() {
   renderFormBadge();
   renderList();
   renderCategoryBars();
+  renderHistory();
 }
 
 /* ---------- Event Listeners ---------- */
@@ -435,6 +495,29 @@ export function bindEvents() {
     themeToggleBtn.addEventListener('click', toggleTheme);
   }
 
+  const historyToggle = $('historyToggle');
+  const historyPopover = $('historyPopover');
+  if (historyToggle && historyPopover) {
+    historyToggle.addEventListener('click', () => {
+      const isOpen = !historyPopover.hidden;
+      historyPopover.hidden = isOpen;
+      historyToggle.setAttribute('aria-expanded', String(!isOpen));
+    });
+    document.addEventListener('click', (event) => {
+      if (!historyPopover.hidden && !event.target.closest('.history-menu')) {
+        historyPopover.hidden = true;
+        historyToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !historyPopover.hidden) {
+        historyPopover.hidden = true;
+        historyToggle.setAttribute('aria-expanded', 'false');
+        historyToggle.focus();
+      }
+    });
+  }
+
   const todayJumpBtn = $('todayJumpBtn');
   if (todayJumpBtn) {
     todayJumpBtn.addEventListener('click', () => {
@@ -443,6 +526,14 @@ export function bindEvents() {
       state.viewYear = now.getFullYear();
       state.viewMonth = now.getMonth();
       renderAll();
+    });
+  }
+
+  const mobileAdd = $('mobileAdd');
+  if (mobileAdd) {
+    mobileAdd.addEventListener('click', () => {
+      document.querySelector('.input-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.setTimeout(() => $('note').focus(), 350);
     });
   }
 

@@ -51,6 +51,25 @@
       </div>
 
       <div class="header-right">
+        <div class="history-menu">
+          <button class="history-toggle" id="historyToggle" type="button" aria-expanded="false" aria-controls="historyPopover">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>
+            <span>Riwayat</span>
+            <svg class="history-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <section class="history-popover" id="historyPopover" hidden aria-label="Riwayat bulanan">
+            <div class="history-popover-head">
+              <div>
+                <span class="eyebrow">Arsip pengeluaran</span>
+                <h2>Riwayat bulanan</h2>
+              </div>
+            </div>
+            <div class="history-list" id="historyList"></div>
+            <div class="empty-state sm" id="historyEmpty">
+              <p class="empty-desc">Belum ada riwayat pengeluaran bulan sebelumnya.</p>
+            </div>
+          </section>
+        </div>
         <div class="month-badge" id="monthBadge">
           <span class="pulse-dot"></span>
           <span id="monthBadgeText">—</span>
@@ -73,6 +92,27 @@
 
       <!-- MAIN COLUMN -->
       <main class="main-col">
+
+        <section class="monthly-hero" aria-labelledby="overviewTitle">
+          <div class="hero-main">
+            <span class="eyebrow" id="overviewMonth">Ringkasan bulan ini</span>
+            <h2 id="overviewTitle">Pengeluaranmu</h2>
+            <strong id="monthTotalHero">Rp0</strong>
+            <p id="heroTransactionNote">Belum ada transaksi bulan ini</p>
+          </div>
+          <div class="hero-details">
+            <div class="hero-metric">
+              <span>Hari ini</span>
+              <strong id="todayTotalHero">Rp0</strong>
+            </div>
+            <div class="hero-metric">
+              <span>Rata-rata transaksi</span>
+              <strong id="averageTotalHero">Rp0</strong>
+            </div>
+          </div>
+        </section>
+
+        <div class="planner-grid">
 
         <!-- CALENDAR CARD -->
         <section class="card cal-card">
@@ -145,6 +185,8 @@
             <span>Simpan Pengeluaran</span>
           </button>
         </form>
+
+        </div>
 
         <!-- EXPENSE LIST CARD -->
         <section class="card list-card">
@@ -237,6 +279,11 @@
 
     </div>
   </div>
+
+  <button class="mobile-add" id="mobileAdd" type="button" aria-label="Catat pengeluaran baru">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    <span>Catat pengeluaran</span>
+  </button>
 
   <script type="module" src="/src/main.js"></script>
 </body>
