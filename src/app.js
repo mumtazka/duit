@@ -72,6 +72,104 @@ function catColor(name) {
 
 function catId(name) { return state.categories.find(c=>c.name===name)?.id || null; }
 
+/* ---------- Smart local entry (no API, no network) ---------- */
+const SMART_ALIASES = {
+  naspad: 'Nasi Padang', esteh: 'Es Teh', est: 'Es Teh',
+  naskun: 'Nasi Kuning', nasduk: 'Nasi Uduk',
+  goride: 'GoRide', gojek: 'Gojek', grab: 'Grab', alfamart: 'Alfamart',
+  indomaret: 'Indomaret', bensin: 'Bensin', parkir: 'Parkir',
+};
+const SMART_CATEGORY_TERMS = {
+  Makan: ['naspad', 'naskun', 'nasduk', 'nasi', 'makan', 'esteh', 'es teh', 'kopi', 'warteg', 'bakso', 'mie', 'ayam', 'kuliner'],
+  Transport: ['parkir', 'bensin', 'gojek', 'goride', 'grab', 'ojek', 'tol', 'angkot', 'bus', 'kereta'],
+  Belanja: ['alfamart', 'indomaret', 'belanja', 'market', 'minimarket', 'shopee', 'tokopedia'],
+  Hiburan: ['netflix', 'bioskop', 'game', 'spotify', 'nonton'],
+};
+
+function smartAmounts(raw) {
+  const matches = [...raw.matchAll(/(\d[\d.,]*)\s*(k|rb|ribu|jt|juta)\b/gi)];
+  if (matches.length) {
+    return matches.map(match => {
+      const suffix = match[2].toLowerCase();
+      const multiplier = ['jt', 'juta'].includes(suffix) ? 1_000_000 : 1_000;
+      const normalized = match[1].replace(',', '.');
+      const value = normalized.includes('.') ? Number.parseFloat(normalized) : Number.parseInt(normalized, 10);
+      return Number.isFinite(value) ? { amount: Math.round(value * multiplier), token: match[0] } : null;
+    }).filter(Boolean);
+  }
+  const plain = [...raw.matchAll(/\d[\d.,]*/g)].at(-1);
+  if (!plain) return [];
+  const amount = Number.parseInt(plain[0].replace(/[.,]/g, ''), 10);
+  return Number.isFinite(amount) && amount > 0 ? [{ amount, token: plain[0] }] : [];
+}
+
+function titleCase(text) {
+  return text.replace(/\b\p{L}/gu, char => char.toUpperCase());
+}
+
+function parseSmartEntry(raw) {
+  const amounts = smartAmounts(raw);
+  if (!amounts.length) return null;
+  let noteRaw = raw;
+  amounts.forEach(({ token }) => { noteRaw = noteRaw.replace(token, ' '); });
+  noteRaw = noteRaw.replace(/\s*\+\s*/g, ' + ').replace(/\s+/g, ' ').trim();
+  const lower = noteRaw.toLowerCase();
+  const words = noteRaw.split('+').map(part => {
+    const clean = part.trim().toLowerCase();
+    return SMART_ALIASES[clean] || titleCase(clean);
+  }).filter(Boolean);
+  const note = words.join(' + ') || 'Tanpa keterangan';
+
+  const matches = Object.entries(SMART_CATEGORY_TERMS)
+    .map(([category, terms]) => [category, Math.min(...terms.map(term => lower.indexOf(term)).filter(index => index >= 0))])
+    .filter(([, index]) => Number.isFinite(index))
+    .sort((a, b) => a[1] - b[1]);
+  const usedCategories = matches.map(([category]) => category);
+  let category = usedCategories[0] || 'Lainnya';
+  if (!state.categories.some(item => item.name === category)) category = 'Lainnya';
+  const mixed = usedCategories.length > 1;
+
+  return { amount: amounts.reduce((total, item) => total + item.amount, 0), note, category, mixed, usedCategories };
+}
+
+function updateSmartPreview() {
+  const input = $('smartInput');
+  const preview = $('smartPreview');
+  const apply = $('smartApply');
+  if (!input || !preview || !apply) return;
+  const parsed = parseSmartEntry(input.value.trim());
+  apply.disabled = !parsed;
+  if (!input.value.trim()) {
+    preview.textContent = 'Tulis seperti biasa—duitk akan isi nominal dan kategori.';
+    preview.classList.remove('is-ready', 'is-warning');
+  } else if (!parsed) {
+    preview.textContent = 'Tambahkan nominal, misalnya: kopi 18k.';
+    preview.classList.remove('is-ready');
+    preview.classList.add('is-warning');
+  } else if (parsed.mixed) {
+    preview.textContent = `${parsed.note} · ${fmtRupiah(parsed.amount)} · ${parsed.category} (utama; juga ${parsed.usedCategories.slice(1).join(' + ')})`;
+    preview.classList.add('is-ready');
+    preview.classList.remove('is-warning');
+  } else {
+    preview.textContent = `${parsed.note} · ${fmtRupiah(parsed.amount)} · ${parsed.category} · Simpan sekarang`;
+    preview.classList.add('is-ready');
+    preview.classList.remove('is-warning');
+  }
+}
+
+function applySmartEntry() {
+  const parsed = parseSmartEntry($('smartInput').value.trim());
+  if (!parsed) return;
+  if (state.editingId) cancelEdit();
+  $('note').value = parsed.note;
+  $('amount').value = parsed.amount;
+  $('category').value = parsed.category;
+  $('amountPreview').textContent = `≈ ${fmtRupiah(parsed.amount)}`;
+  $('smartInput').value = '';
+  updateSmartPreview();
+  $('expenseForm').requestSubmit();
+}
+
 /* ---------- Theme Manager ---------- */
 export function initTheme() {
   const saved = localStorage.getItem('pengeluaran-theme');
@@ -535,6 +633,20 @@ export function bindEvents() {
       document.querySelector('.input-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
       window.setTimeout(() => $('note').focus(), 350);
     });
+  }
+
+  const smartInput = $('smartInput');
+  const smartApply = $('smartApply');
+  if (smartInput && smartApply) {
+    smartInput.addEventListener('input', updateSmartPreview);
+    smartInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        applySmartEntry();
+      }
+    });
+    smartApply.addEventListener('click', applySmartEntry);
+    updateSmartPreview();
   }
 
   $('amount').addEventListener('input', () => {
