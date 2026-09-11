@@ -44,3 +44,7 @@
 @media(min-width:701px){.planner-grid .cal-card{grid-column:1}.cal-day{aspect-ratio:auto;min-height:49px}.planner-grid .input-card{grid-column:1}.planner-grid .input-card .preview-row{display:none}}
 @media(min-width:1050px){.planner-grid .input-card{display:grid;grid-template-columns:minmax(220px,1.45fr) minmax(290px,1fr) auto;align-items:end;gap:10px 12px}.planner-grid .input-card .form-header,.planner-grid .input-card .edit-bar{grid-column:1 / -1}.planner-grid .input-card>.field{grid-column:1}.planner-grid .input-card .field-row{grid-column:2;grid-template-columns:1fr 1fr}.planner-grid .input-card .btn-primary{grid-column:3;min-width:172px}.planner-grid .input-card .preview-row{display:none}}
 @media(max-width:700px){.history-toggle{width:34px;padding:0;justify-content:center}.history-toggle span,.history-toggle .history-chevron{display:none}.history-popover{position:fixed;top:64px;right:14px;left:14px;width:auto;max-height:calc(100vh - 86px)}.monthly-hero{display:flex}}
+
+/* duitk wordmark */
+.brand-icon{width:42px;height:42px;border-radius:13px;color:#0d3b2e;background:#9ce8c9}.brand-title{display:flex;align-items:baseline;gap:7px}.brand-name{font-size:21px;font-weight:820;letter-spacing:-.065em}.brand-product{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:-.015em}[data-theme="dark"] .brand-icon{color:#d5ffea;background:#176a51}
+@media(max-width:700px){.brand-icon{width:34px;height:34px;border-radius:10px}.brand-title{gap:5px}.brand-name{font-size:18px}.brand-product{display:none}}
